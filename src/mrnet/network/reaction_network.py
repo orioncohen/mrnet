@@ -7,6 +7,7 @@ from functools import reduce
 from typing import Dict, List, Tuple, Union, Any, FrozenSet, Set, TypeVar
 from ast import literal_eval
 
+import numpy as np
 import networkx as nx
 from monty.json import MSONable
 from networkx.readwrite import json_graph
@@ -24,6 +25,14 @@ from mrnet.core.reactions import (
     rexp,
     softplus,
     MetalHopReaction,
+)
+from mrnet.utils.concerted import (
+    get_reaction_indices,
+    construct_reaction_dataframe,
+    square_matrix,
+    get_rxn_subspace,
+    validate_concerted_rxns,
+    rxn_matrix_to_list
 )
 from mrnet.utils.classes import load_class
 
@@ -1519,6 +1528,50 @@ class ReactionNetwork(MSONable):
                     self.matrix_inverse[i][k] = v[i]
 
         return self.matrix
+
+    @staticmethod
+    def build_matrix_from_reactions(RN):
+        """
+        This should use the RN.reactions attribute to construct a adjacency matrix as scipy.sparse
+        matrix. It should avoid using the nx.graph to avoid memory issues.
+        It should also construct a dataframe containing the information associated with
+        each rxn that is needed to validate concerted reactions.
+
+
+        It currently relies on several undefined methods.
+
+        :param RN:
+        :return: adjacency_matrix, minimal_rxn_dataframe
+        """
+        n_nodes = len(RN.entries_list) + len(RN.reactions)
+        adjacency_matrix = np.zeros((n_nodes, n_nodes))
+        rxn_dataframe = construct_reaction_dataframe(RN)
+        indices_list = get_reaction_indices(RN, rxn_dataframe) # this is a sloppy dependency.
+        for index in indices_list:
+            i, j = index
+            adjacency_matrix[i, j] = 1
+        return adjacency_matrix, rxn_dataframe
+
+    @staticmethod
+    def identify_concerted_rxns_via_matrix(
+        RN
+    ):
+        """
+        This should use build_matrix_from_reactions to identify all concerted rxns and add them
+        back into the network. Many of the functions used are defined in concerted.py to reduce
+        clutter.
+
+        :param RN:
+        :return:
+        """
+        adjacency_matrix, rxn_dataframe = RN.build_matrix_from_reactions(RN)
+        squared_adjacency_matrix = square_matrix(adjacency_matrix)
+        rxn_adjacency_matrix = get_rxn_subspace(squared_adjacency_matrix, rxn_dataframe)
+        valid_concerted_matrix = validate_concerted_rxns(rxn_adjacency_matrix, rxn_dataframe)
+        concerted_reactions = rxn_matrix_to_list(valid_concerted_matrix, rxn_dataframe)
+        RN.add_concerted_rxns(RN, concerted_reactions)
+
+
 
     @staticmethod
     def identify_concerted_rxns_via_intermediates(
