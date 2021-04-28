@@ -8,6 +8,7 @@ from typing import Dict, List, Tuple, Union, Any, FrozenSet, Set, TypeVar
 from ast import literal_eval
 
 import numpy as np
+import pandas as pd
 import networkx as nx
 from monty.json import MSONable
 from networkx.readwrite import json_graph
@@ -32,7 +33,8 @@ from mrnet.utils.concerted import (
     square_matrix,
     get_rxn_subspace,
     validate_concerted_rxns,
-    rxn_matrix_to_list
+    rxn_matrix_to_list,
+    construct_matrix
 )
 from mrnet.utils.classes import load_class
 
@@ -1543,14 +1545,10 @@ class ReactionNetwork(MSONable):
         :param RN:
         :return: adjacency_matrix, minimal_rxn_dataframe
         """
-        n_nodes = len(RN.entries_list) + len(RN.reactions)
-        adjacency_matrix = np.zeros((n_nodes, n_nodes))
         rxn_dataframe = construct_reaction_dataframe(RN)
-        indices_list = get_reaction_indices(RN, rxn_dataframe) # this is a sloppy dependency.
-        for index in indices_list:
-            i, j = index
-            adjacency_matrix[i, j] = 1
-        return adjacency_matrix, rxn_dataframe
+        data, coords, node_index = get_reaction_indices(RN, rxn_dataframe)
+        adjacency_matrix = construct_matrix(data, coords)
+        return adjacency_matrix, rxn_dataframe, node_index
 
     @staticmethod
     def identify_concerted_rxns_via_matrix(
@@ -1564,7 +1562,7 @@ class ReactionNetwork(MSONable):
         :param RN:
         :return:
         """
-        adjacency_matrix, rxn_dataframe = RN.build_matrix_from_reactions(RN)
+        adjacency_matrix, rxn_dataframe, node_index = RN.build_matrix_from_reactions(RN)
         squared_adjacency_matrix = square_matrix(adjacency_matrix)
         rxn_adjacency_matrix = get_rxn_subspace(squared_adjacency_matrix, rxn_dataframe)
         valid_concerted_matrix = validate_concerted_rxns(rxn_adjacency_matrix, rxn_dataframe)
