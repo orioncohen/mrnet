@@ -11,7 +11,26 @@ def get_reaction_indices(RN, rxn_dataframe):
     :param rxn_dataframe:
     :return:
     """
-    return
+    # reactions are indexed first, then nodes
+    rxn_index = {row['node_id']: i
+                 for i, row in rxn_dataframe.iterrows()}
+    offset = len(rxn_index)
+    mol_index = {mol.entry_id: mol.parameters['ind'] + offset
+                 for mol in RN.entries_list}
+    node_index = {**rxn_index, **mol_index}
+    i = []
+    j = []
+    data = []
+    for rxn_index, rxn in rxn_dataframe.iterrows():
+        in_edges = itertools.product(rxn['reactants'], [rxn['node_id']])
+        out_edges = itertools.product([rxn['node_id']], tuple(rxn['products']))
+        edges = itertools.chain(in_edges, out_edges)
+        for edge in edges:
+            i.append(node_index[edge[0]])
+            j.append(node_index[edge[1]])
+            data.append(1)
+    coords = zip(i, j)
+    return data, coords, node_index
 
 
 def construct_reaction_dataframe(RN):

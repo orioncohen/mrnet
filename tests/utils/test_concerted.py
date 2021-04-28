@@ -79,6 +79,16 @@ class TestConcertedUtilities(PymatgenTest):
 
     def test_get_reaction_indices(self):
         RN = self.RN_build
+        rxn_dataframe = construct_reaction_dataframe(RN)
+        data, coords, node_index = get_reaction_indices(RN, rxn_dataframe)
+
+        self.assertEqual(len(RN.reactions) * 2 + len(RN.entries_list), len(node_index))
+        self.assertEqual(len(RN.reactions) * 2, len(rxn_dataframe))
+
+        coord_list = list(coords)
+        self.assertIn((node_index[116814], node_index[(0, 'A')]), coord_list)
+        self.assertIn((node_index[(459, 'B')], node_index[115885]), coord_list)
+        self.assertIn((node_index[120769], node_index[(1053, 'A')]), coord_list)
 
 
     def test_construct_reaction_dataframe(self):
