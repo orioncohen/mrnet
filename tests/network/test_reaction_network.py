@@ -909,6 +909,17 @@ class TestReactionNetwork(PymatgenTest):
 
         self.assertEqual(RN_loaded.matrix_inverse, loaded_inverse_matrix)
 
+    def test_build_matrix_from_reactions(self):
+        with open(
+            os.path.join(
+                test_dir, "identify_concerted_via_intermediate_unittest_RN.pkl"
+            ),
+            "rb",
+        ) as input:
+            RN_loaded = pickle.load(input)
+
+        RN_loaded.build_matrix_from_reactions(RN_loaded)
+
     def test_concerted_reaction_filter(self):
         r, r_node = ReactionNetwork.concerted_reaction_filter("6,2+7", "2+PR_1,3")
         self.assertEqual([[1, 6], [3, 7]], r)
