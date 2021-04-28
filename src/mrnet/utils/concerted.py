@@ -4,12 +4,14 @@ import itertools
 
 def get_reaction_indices(RN, rxn_dataframe):
     """
-    given a RN and a data_frame this will return a list of all the indices of all the edges
-    in the adjacency matrix.
+    given a RN and a data_frame this will the sparse non-zero entries of the
+    graph in COO format. The data will be a list of values, the coords will
+    be a list of tuples, and the node_index is a map between absolute node_id's
+    and relative indices in the matrix.
 
     :param RN:
     :param rxn_dataframe:
-    :return:
+    :return: data, coords, node_index
     """
     # reactions are indexed first, then nodes
     rxn_index = {row['node_id']: i
@@ -35,11 +37,12 @@ def get_reaction_indices(RN, rxn_dataframe):
 
 def construct_reaction_dataframe(RN):
     """
-    given a RN, this should construct a dataframe with the minimal information needed to characterize
-    whether or not a concerted rxn is valid.
+    given a RN, this constructs a dataframe with the minimal information needed to characterize
+    whether or not a concerted rxn is valid. Each reaction object is split into its forward and
+    reverse (A and B) components and both are added to the dataframe separately.
 
     :param RN:
-    :return:
+    :return: rxn_dataframe
     """
     node_id = []
     delta_g = []
