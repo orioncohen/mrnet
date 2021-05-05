@@ -67,10 +67,10 @@ def construct_reaction_dataframe(RN):
         products.append(rxn.reactant_ids)
     # map to dict to easily transform to df
     col_names = {'node_id': node_id,
-                'delta_g': delta_g,
-                'rxn_type': rxn_type,
-                'reactants': reactants,
-                'products': products}
+                 'delta_g': delta_g,
+                 'rxn_type': rxn_type,
+                 'reactants': reactants,
+                 'products': products}
     rxn_dataframe = pd.DataFrame(col_names)
     return rxn_dataframe
 
@@ -140,7 +140,39 @@ def validate_concerted_rxns(rxn_adjacency_matrix, rxn_dataframe):
     :param rxn_dataframe:
     :return:
     """
-    return
+    # this is the validation kernel that we need to map over the sparse matrix
+    # it might be advantageous to somehow write it up in c?
+    # TODO for Atsushi: consider writing these operations in C or C++ with Cython?
+    def validate_rxn_pair(rxn1_index, rxn2_index):
+        # using inequalities to confirm thermodynamic favorability
+        delta_g_1 = rxn_dataframe.iloc[rxn1_index]['delta_g']
+        delta_g_2 = rxn_dataframe.iloc[rxn2_index]['delta_g']
+        if delta_g_1 < 0 or delta_g_1 < delta_g_2:
+            return 0
+
+        # TODO for Orion: add logic for type checking
+
+        # checking to ensure the reaction and products are not too long
+        all_reactants = set(rxn_dataframe.iloc[rxn1_index]['reactants']) | \
+                        set(rxn_dataframe.iloc[rxn2_index]['reactants'])
+        all_products = set(rxn_dataframe.iloc[rxn1_index]['products']) | \
+                       set(rxn_dataframe.iloc[rxn2_index]['products'])
+        n_products = len(all_products - all_reactants)
+        n_reactants = len(all_reactants - all_products)
+        if n_products > 2 or n_reactants > 2 \
+                or n_products == 0 or n_reactants == 0:
+            return 0
+        return 1
+
+    # TODO for Atsushi: make this work for a sparse matrix and accelerate it with Numba
+    # the for loop I wrote is very specific to dense matrices! it should be
+    # made to work for sparse matrices too!
+    for i in range(len(rxn_adjacency_matrix)):
+        for j in range(len(rxn_adjacency_matrix)):
+            if i == j:
+                continue
+            rxn_adjacency_matrix[i, j] = validate_rxn_pair(i, j)
+    return rxn_adjacency_matrix
 
 
 def rxn_matrix_to_list(RN, valid_concerted_matrix, rxn_dataframe):

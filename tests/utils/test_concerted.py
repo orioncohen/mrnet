@@ -26,7 +26,9 @@ from mrnet.utils.concerted import (
     get_reaction_indices,
     square_matrix,
     construct_matrix
+    validate_concerted_rxns
 )
+
 try:
     import openbabel as ob
 except ImportError:
@@ -49,13 +51,12 @@ class TestConcertedUtilities(PymatgenTest):
         #     with open(os.path.join(test_dir, "unittest_RN_build.pkl"), "rb") as input:
         #         cls.RN_build = pickle.load(input)
         with open(
-            os.path.join(
-                test_dir, "identify_concerted_via_intermediate_unittest_RN.pkl"
-            ),
-            "rb",
+                os.path.join(
+                    test_dir, "identify_concerted_via_intermediate_unittest_RN.pkl"
+                ),
+                "rb",
         ) as input:
             cls.RN_build = pickle.load(input)
-
 
     def test_setup(self):
         return
@@ -92,7 +93,6 @@ class TestConcertedUtilities(PymatgenTest):
         self.assertIn((node_index[116814], node_index[(0, 'A')]), coord_list)
         self.assertIn((node_index[(459, 'B')], node_index[115885]), coord_list)
         self.assertIn((node_index[120769], node_index[(1053, 'A')]), coord_list)
-
 
     def test_construct_reaction_dataframe(self):
         RN = self.RN_build
@@ -172,6 +172,32 @@ class TestConcertedUtilities(PymatgenTest):
 
     def test_validate_concerted_rxns(self):
         RN = self.RN_build
+        dense_adjacency = np.array([[0, 0, 0, 1, 1, 1],
+                                   [0, 0, 0, 1, 1, 1],
+                                   [0, 0, 0, 0, 0, 0],
+                                   [0, 0, 0, 0, 0, 0],
+                                   [0, 0, 0, 0, 0, 0],
+                                   [0, 0, 0, 0, 0, 0]])
+        node_ids = [(0, 'A'), (0, 'B'), (1, 'A'), (2, 'A'), (3, 'A'), (4, 'A')]
+        delta_g = [0.5, -0.5, -1, -1, -1, -0.2]
+        rxn_types = ['', '', '', '', '', '']
+        reactants = [[10, 11], [14, 15], [12], [13, 14], [14], [15]]
+        products = [[14, 15], [10, 11], [14], [16], [17], [18]]
+        rxn_dataframe = pd.DataFrame({
+            'node_ids': node_ids,
+            'delta_g': delta_g,
+            'rxn_types': rxn_types,
+            'reactants': reactants,
+            'products': products
+        })
+        valid_adjacency = validate_concerted_rxns(dense_adjacency, rxn_dataframe)
+        correct_matrix = np.array([[0, 0, 0, 0, 1, 1],
+                                   [0, 0, 0, 0, 0, 0],
+                                   [0, 0, 0, 0, 0, 0],
+                                   [0, 0, 0, 0, 0, 0],
+                                   [0, 0, 0, 0, 0, 0],
+                                   [0, 0, 0, 0, 0, 0]])
+        self.assertArrayEqual(valid_adjacency, correct_matrix)
 
     def test_rxn_matrix_to_list(self):
         RN = self.RN_build
