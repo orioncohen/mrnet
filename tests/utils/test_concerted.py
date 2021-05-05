@@ -25,7 +25,7 @@ from mrnet.utils.concerted import (
     construct_reaction_dataframe,
     get_reaction_indices,
     square_matrix,
-    construct_matrix
+    construct_matrix,
     validate_concerted_rxns
 )
 
