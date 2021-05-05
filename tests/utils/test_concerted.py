@@ -6,6 +6,7 @@ import pickle
 import copy
 import numpy as np
 import pandas as pd
+import scipy.sparse
 
 from monty.serialization import dumpfn, loadfn
 from networkx.readwrite import json_graph
@@ -22,7 +23,9 @@ from mrnet.network.reaction_generation import ReactionGenerator
 
 from mrnet.utils.concerted import (
     construct_reaction_dataframe,
-    get_reaction_indices
+    get_reaction_indices,
+    square_matrix,
+    construct_matrix
 )
 try:
     import openbabel as ob
@@ -119,9 +122,50 @@ class TestConcertedUtilities(PymatgenTest):
         self.assertEqual(rxn_1053A['reactants'][0], 120769)
         self.assertEqual(rxn_1053A['products'][1], 116813)
 
+    def test_construct_matrix(self):
+        RN = self.RN_build
+        rxn_dataframe = construct_reaction_dataframe(RN)
+        data, coords, node_index = get_reaction_indices(RN, rxn_dataframe)
+        A = construct_matrix(data, coords, len(node_index))
+        self.assertEqual(A.shape, (len(node_index), len(node_index)))
+        A = A.todense()
+        self.assertEqual(A[node_index[116814], node_index[(0, 'A')]], 1)
+        self.assertEqual(A[node_index[(459, 'B')], node_index[115885]], 1)
+        self.assertEqual(A[node_index[120769], node_index[(1053, 'A')]], 1)
 
     def test_square_matrix(self):
+        # Test with two small 3x3 examples first
+        A = scipy.sparse.coo_matrix(np.array(
+            [[1,1,0], [0,1,0], [1,1,1]]))
+        result = square_matrix(A)
+        expected = np.array(
+            [[1,2,0], [0,1,0], [2,3,1]])
+        np.testing.assert_array_equal(result.todense(), expected)
+
+        A = scipy.sparse.coo_matrix(np.array(
+            [[1,1,0], [1,0,1], [0,1,1]]))
+        result = square_matrix(A)
+        expected = np.array(
+            [[2,1,1], [1,2,1], [1,1,2]])
+        np.testing.assert_array_equal(result.todense(), expected)
+
+        # Test with random matrices up to size 100x100
+        for s in range(1, 100):
+            A = np.random.randint(2, size=s*s).reshape(s, s)
+            expected = np.matmul(A, A)
+            result = square_matrix(scipy.sparse.coo_matrix(A))
+            np.testing.assert_array_equal(result.todense(), expected)
+
+        # Test with the matrix from the reaction network example
         RN = self.RN_build
+        rxn_dataframe = construct_reaction_dataframe(RN)
+        data, coords, node_index = get_reaction_indices(RN, rxn_dataframe)
+        A = construct_matrix(data, coords, len(node_index))
+        result = square_matrix(A)
+        A_csr = A.tocsr()
+        expected = (A_csr * A_csr).todense()
+        np.testing.assert_array_equal(result.todense(), expected)
+        
 
     def test_get_rxn_subspace(self):
         RN = self.RN_build
