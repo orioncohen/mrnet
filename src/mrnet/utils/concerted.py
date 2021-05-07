@@ -1,5 +1,8 @@
 import pandas as pd
 import itertools
+import scipy.sparse
+import cupy
+import cupyx.scipy.sparse
 
 
 def get_reaction_indices(RN, rxn_dataframe):
@@ -72,26 +75,47 @@ def construct_reaction_dataframe(RN):
     return rxn_dataframe
 
 
-# TODO for Chloe: make the matrix you need
-def construct_matrix(data, coords):
+def construct_matrix(data, coords, size):
     """
     This will construct a matrix of arbitrary form from just the data and coords. I have left this
     open ended so that Chloe can choose whatever format is best.
 
-    :param matrix:
-    :return:
+    scipy COO sparse matrix format
+
+    :param data: list of nonzero values
+    :param coords: list of tuples that indicate row and col indices
+    :param size: the number of rows/columns in the square matrix
+    :return: resulting matrix in scipy sparse COO format
     """
+    row_idx, col_idx = zip(*coords)
+    return scipy.sparse.coo_matrix((data, (row_idx, col_idx)),
+            shape=(size, size))
 
 
-# TODO for Chloe: implement PyCu matrix multiplication
 def square_matrix(matrix):
     """
     this should square a matrix using PyCu. Should run on GPU!
 
-    :param matrix:
-    :return:
+    :param matrix: scipy sparse coo matrix
+    :return: matrix squared, also in scipy sparse coo format
     """
-    return
+    data = cupy.array(matrix.data, dtype=float)
+    row = cupy.array(matrix.row, dtype=float)
+    col = cupy.array(matrix.col, dtype=float)
+    matrix_csr = cupyx.scipy.sparse.coo_matrix((
+        data, (row, col)), shape=matrix.shape).tocsr()
+    return (matrix_csr * matrix_csr).tocoo().get()
+
+
+def square_matrix_scipy(matrix):
+    """
+    barebone scipy version of matmul
+
+    :param matrix: scipy sparse coo matrix
+    :return: matrix squared, also in scipy sparse coo format
+    """
+    matrix_csr = matrix.tocsr()
+    return (matrix_csr * matrix_csr).tocoo()
 
 
 def get_rxn_subspace(squared_adjacency_matrix, reaction_dataframe):
