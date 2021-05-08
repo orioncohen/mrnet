@@ -1,8 +1,12 @@
 import pandas as pd
 import itertools
 import scipy.sparse
-import cupy
-import cupyx.scipy.sparse
+try:
+    import cupy
+    import cupyx.scipy.sparse
+except ImportError:
+    cupy = None
+    print("WARNING: The concerted module can only be used in a CUDA supported environment.")
 
 
 def get_reaction_indices(RN, rxn_dataframe):
@@ -105,7 +109,6 @@ def square_matrix(matrix):
     matrix_csr = cupyx.scipy.sparse.coo_matrix((
         data, (row, col)), shape=matrix.shape).tocsr()
     return (matrix_csr * matrix_csr).tocoo().get()
-
 
 def square_matrix_scipy(matrix):
     """

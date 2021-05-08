@@ -1556,7 +1556,7 @@ class ReactionNetwork(MSONable):
         """
         rxn_dataframe = construct_reaction_dataframe(RN)
         data, coords, node_index = get_reaction_indices(RN, rxn_dataframe)
-        adjacency_matrix = construct_matrix(data, coords)
+        adjacency_matrix = construct_matrix(data, coords, len(node_index))
         return adjacency_matrix, rxn_dataframe, node_index
 
     @staticmethod
@@ -1573,10 +1573,10 @@ class ReactionNetwork(MSONable):
         """
         adjacency_matrix, rxn_dataframe, node_index = RN.build_matrix_from_reactions(RN)
         squared_adjacency_matrix = square_matrix(adjacency_matrix)
-        rxn_adjacency_matrix = get_rxn_subspace(squared_adjacency_matrix, rxn_dataframe)
-        valid_concerted_matrix = validate_concerted_rxns(rxn_adjacency_matrix, rxn_dataframe)
-        concerted_reactions = rxn_matrix_to_list(valid_concerted_matrix, rxn_dataframe)
-        RN.add_concerted_rxns(RN, concerted_reactions)
+        # rxn_adjacency_matrix = get_rxn_subspace(squared_adjacency_matrix, rxn_dataframe)
+        # valid_concerted_matrix = validate_concerted_rxns(rxn_adjacency_matrix, rxn_dataframe)
+        # concerted_reactions = rxn_matrix_to_list(valid_concerted_matrix, rxn_dataframe)
+        # RN.add_concerted_rxns(RN, concerted_reactions)
 
 
 
