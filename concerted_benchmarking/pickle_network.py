@@ -5,7 +5,7 @@ import os
 import pickle
 from monty.serialization import loadfn
 
-benchmarking_dir = "/Users/orioncohen/software/mrnet/concerted_benchmarking/"
+benchmarking_dir = os.getcwd()
 
 entries = loadfn(os.path.join(benchmarking_dir, "mrnet_all_of_entries_16334.json"))
 RN = ReactionNetwork.from_input_entries(entries)
