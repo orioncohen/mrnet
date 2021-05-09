@@ -2,7 +2,8 @@ from mrnet.network.reaction_network import (
     ReactionNetwork
 )
 from mrnet.utils.concerted import (
-    square_matrix_scipy
+    square_matrix_scipy,
+    validate_concerted_rxns
 )
 import os
 import pickle
@@ -24,3 +25,5 @@ adjacency_matrix, rxn_dataframe, node_index = RN_loaded.build_matrix_from_reacti
 print('Matrix built at: ', time.time() - start_time)
 squared_matrix = square_matrix_scipy(adjacency_matrix)
 print('Matrix squared at: ', time.time() - start_time)
+valid_reactions = validate_concerted_rxns(squared_matrix, rxn_dataframe)
+print('Matrix validated at: ', time.time() - start_time)
