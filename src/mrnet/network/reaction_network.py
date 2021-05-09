@@ -34,7 +34,6 @@ from mrnet.utils.concerted import (
     get_reaction_indices,
     construct_reaction_dataframe,
     square_matrix,
-    get_rxn_subspace,
     validate_concerted_rxns,
     rxn_matrix_to_list,
     construct_matrix
