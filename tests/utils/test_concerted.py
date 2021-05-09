@@ -179,17 +179,14 @@ class TestConcertedUtilities(PymatgenTest):
         A_csr = A.tocsr()
         expected = (A_csr * A_csr).todense()
         np.testing.assert_array_equal(result.todense(), expected)
-        
-
-    def test_get_rxn_subspace(self):
-        RN = self.RN_build
 
 
     def test_validate_concerted_rxns(self):
         return
 
-    def test_validate_concerted_rxns_sparse(self):
+    def test_validate_concerted_rxns(self):
         RN = self.RN_build
+
         dense_adjacency = np.array([[0, 0, 0, 1, 1, 1],
                                    [0, 0, 0, 1, 1, 1],
                                    [0, 0, 0, 0, 0, 0],
@@ -221,6 +218,7 @@ class TestConcertedUtilities(PymatgenTest):
         np.testing.assert_array_equal(correct_sparse_matrix.row, valid_adjacency.row)
         np.testing.assert_array_equal(correct_sparse_matrix.col, valid_adjacency.col)
         np.testing.assert_array_equal(correct_sparse_matrix.data, valid_adjacency.data)
+
 
     def test_rxn_matrix_to_list(self):
         RN = self.RN_build

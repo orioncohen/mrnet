@@ -122,23 +122,13 @@ def square_matrix_scipy(matrix):
     return (matrix_csr * matrix_csr).tocoo()
 
 
-def get_rxn_subspace(squared_adjacency_matrix, reaction_dataframe):
-    """
-    this should create a submatrix with only the reaction subspace in the squared adjacency matrix.
-    Perhaps it should not be an independent function.
-
-    :param squared_adjacency_matrix:
-    :param reaction_dataframe:
-    :return:
-    """
-    return
-
-
 # TODO for Atsushi: map a validation kernel over a matrix with
 def validate_concerted_rxns(rxn_adjacency_matrix, rxn_dataframe):
     """
     This should map a validation kernel written in Cython or Numba over the whole rxn_adjacency_matrix
-    and return a new matrix with all entries invalid entries removed. Should run on GPU!
+    and return a new matrix with all entries invalid entries removed.
+    This also shrinks the matrix to select only the reaction subspace.
+    Should run on GPU!
 
     :param rxn_adjacency_matrix:
     :param rxn_dataframe:
@@ -169,9 +159,9 @@ def validate_concerted_rxns(rxn_adjacency_matrix, rxn_dataframe):
         return 1
 
     # TODO for Atsushi: accelerate this with Numba!
-    # the for loop I wrote is very specific to dense matrices! it should be
-    # made to work for sparse matrices too!
-    rx = rxn_adjacency_matrix
+    rxn_dim = len(rxn_dataframe)
+    rx = rxn_adjacency_matrix  # this could be a copy but that would be slow?
+    rx.resize((rxn_dim, rxn_dim))
 
     row = []
     col = []
