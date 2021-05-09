@@ -159,10 +159,6 @@ class TestConcertedUtilities(PymatgenTest):
             [[1,2,0], [0,1,0], [2,3,1]])
         np.testing.assert_array_equal(result.todense(), expected)
 
-        print(A)
-        for i in A:
-            print(i)
-
         # Test with random matrices up to size 100x100
         for s in range(1, 100):
             A = np.random.randint(2, size=s*s).reshape(s, s)
