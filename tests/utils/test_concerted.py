@@ -25,6 +25,7 @@ from mrnet.utils.concerted import (
     construct_reaction_dataframe,
     get_reaction_indices,
     square_matrix,
+    square_matrix_scipy,
     construct_matrix,
     validate_concerted_rxns
 )
@@ -149,6 +150,19 @@ class TestConcertedUtilities(PymatgenTest):
             [[2,1,1], [1,2,1], [1,1,2]])
         np.testing.assert_array_equal(result.todense(), expected)
 
+    def test_square_matrix_scipy(self):
+        # Test with two small 3x3 examples first
+        A = scipy.sparse.coo_matrix(np.array(
+            [[1,1,0], [0,1,0], [1,1,1]]))
+        result = square_matrix_scipy(A)
+        expected = np.array(
+            [[1,2,0], [0,1,0], [2,3,1]])
+        np.testing.assert_array_equal(result.todense(), expected)
+
+        print(A)
+        for i in A:
+            print(i)
+
         # Test with random matrices up to size 100x100
         for s in range(1, 100):
             A = np.random.randint(2, size=s*s).reshape(s, s)
@@ -170,7 +184,11 @@ class TestConcertedUtilities(PymatgenTest):
     def test_get_rxn_subspace(self):
         RN = self.RN_build
 
+
     def test_validate_concerted_rxns(self):
+        return
+
+    def test_validate_concerted_rxns_sparse(self):
         RN = self.RN_build
         dense_adjacency = np.array([[0, 0, 0, 1, 1, 1],
                                    [0, 0, 0, 1, 1, 1],
@@ -178,6 +196,7 @@ class TestConcertedUtilities(PymatgenTest):
                                    [0, 0, 0, 0, 0, 0],
                                    [0, 0, 0, 0, 0, 0],
                                    [0, 0, 0, 0, 0, 0]])
+        sparse_adjacency = scipy.sparse.coo_matrix(dense_adjacency)
         node_ids = [(0, 'A'), (0, 'B'), (1, 'A'), (2, 'A'), (3, 'A'), (4, 'A')]
         delta_g = [0.5, -0.5, -1, -1, -1, -0.2]
         rxn_types = ['', '', '', '', '', '']
@@ -190,14 +209,18 @@ class TestConcertedUtilities(PymatgenTest):
             'reactants': reactants,
             'products': products
         })
-        valid_adjacency = validate_concerted_rxns(dense_adjacency, rxn_dataframe)
+        valid_adjacency = validate_concerted_rxns(sparse_adjacency, rxn_dataframe)
         correct_matrix = np.array([[0, 0, 0, 0, 1, 1],
                                    [0, 0, 0, 0, 0, 0],
                                    [0, 0, 0, 0, 0, 0],
                                    [0, 0, 0, 0, 0, 0],
                                    [0, 0, 0, 0, 0, 0],
                                    [0, 0, 0, 0, 0, 0]])
-        self.assertArrayEqual(valid_adjacency, correct_matrix)
+        correct_sparse_matrix = scipy.sparse.coo_matrix(correct_matrix)
+
+        np.testing.assert_array_equal(correct_sparse_matrix.row, valid_adjacency.row)
+        np.testing.assert_array_equal(correct_sparse_matrix.col, valid_adjacency.col)
+        np.testing.assert_array_equal(correct_sparse_matrix.data, valid_adjacency.data)
 
     def test_rxn_matrix_to_list(self):
         RN = self.RN_build

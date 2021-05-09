@@ -1,5 +1,6 @@
 import pandas as pd
 import itertools
+
 import scipy.sparse
 try:
     import cupy
@@ -167,15 +168,20 @@ def validate_concerted_rxns(rxn_adjacency_matrix, rxn_dataframe):
             return 0
         return 1
 
-    # TODO for Atsushi: make this work for a sparse matrix and accelerate it with Numba
+    # TODO for Atsushi: accelerate this with Numba!
     # the for loop I wrote is very specific to dense matrices! it should be
     # made to work for sparse matrices too!
-    for i in range(len(rxn_adjacency_matrix)):
-        for j in range(len(rxn_adjacency_matrix)):
-            if i == j:
-                continue
-            rxn_adjacency_matrix[i, j] = validate_rxn_pair(i, j)
-    return rxn_adjacency_matrix
+    rx = rxn_adjacency_matrix
+
+    row = []
+    col = []
+    data = []
+    for num, i, j in zip(range(len(rx.data)), rx.row, rx.col):
+        if i != j and validate_rxn_pair(i, j):
+            row.append(i)
+            col.append(j)
+            data.append(1)
+    return scipy.sparse.coo_matrix((data, (row, col)), shape=rx.shape)
 
 
 def rxn_matrix_to_list(RN, valid_concerted_matrix, rxn_dataframe):
