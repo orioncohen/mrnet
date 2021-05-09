@@ -6,15 +6,26 @@ from mrnet.utils.concerted import (
     validate_concerted_rxns
 )
 import os
+import sys
 import pickle
 from monty.serialization import loadfn
 import time
 
 benchmarking_dir = os.getcwd()
 
+keyword = sys.argv[1]
+
+if keyword == 'large':
+    network_file = "large_reaction_network.pkl"
+elif keyword == 'small':
+    network_file = "small_reaction_network.pkl"
+else:
+    raise Exception("benchmarking.py takes 'large' or 'small' as a keyword to "
+                    "select which network to benchmark.")
+
 with open(
         os.path.join(
-            benchmarking_dir, "large_reaction_network.pkl"
+            benchmarking_dir, network_file
         ),
         "rb",
 ) as input:
