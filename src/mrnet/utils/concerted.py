@@ -1,8 +1,13 @@
 import pandas as pd
 import itertools
+
 import scipy.sparse
-import cupy
-import cupyx.scipy.sparse
+try:
+    import cupy
+    import cupyx.scipy.sparse
+except ImportError:
+    cupy = None
+    print("WARNING: The concerted module can only be used in a CUDA supported environment.")
 
 
 def get_reaction_indices(RN, rxn_dataframe):
@@ -109,7 +114,6 @@ def square_matrix(matrix):
         data, (row, col)), shape=matrix.shape).tocsr()
     return (matrix_csr * matrix_csr).tocoo().get()
 
-
 def square_matrix_scipy(matrix):
     """
     barebone scipy version of matmul
@@ -121,23 +125,13 @@ def square_matrix_scipy(matrix):
     return (matrix_csr * matrix_csr).tocoo()
 
 
-def get_rxn_subspace(squared_adjacency_matrix, reaction_dataframe):
-    """
-    this should create a submatrix with only the reaction subspace in the squared adjacency matrix.
-    Perhaps it should not be an independent function.
-
-    :param squared_adjacency_matrix:
-    :param reaction_dataframe:
-    :return:
-    """
-    return
-
-
 # TODO for Atsushi: map a validation kernel over a matrix with
 def validate_concerted_rxns(rxn_adjacency_matrix, rxn_dataframe):
     """
     This should map a validation kernel written in Cython or Numba over the whole rxn_adjacency_matrix
-    and return a new matrix with all entries invalid entries removed. Should run on GPU!
+    and return a new matrix with all entries invalid entries removed.
+    This also shrinks the matrix to select only the reaction subspace.
+    Should run on GPU!
 
     :param rxn_adjacency_matrix:
     :param rxn_dataframe:
@@ -167,15 +161,20 @@ def validate_concerted_rxns(rxn_adjacency_matrix, rxn_dataframe):
             return 0
         return 1
 
-    # TODO for Atsushi: make this work for a sparse matrix and accelerate it with Numba
-    # the for loop I wrote is very specific to dense matrices! it should be
-    # made to work for sparse matrices too!
-    for i in range(len(rxn_adjacency_matrix)):
-        for j in range(len(rxn_adjacency_matrix)):
-            if i == j:
-                continue
-            rxn_adjacency_matrix[i, j] = validate_rxn_pair(i, j)
-    return rxn_adjacency_matrix
+    # TODO for Atsushi: accelerate this with Numba!
+    rxn_dim = len(rxn_dataframe)
+    rx = rxn_adjacency_matrix  # this could be a copy but that would be slow?
+    rx.resize((rxn_dim, rxn_dim))
+
+    row = []
+    col = []
+    data = []
+    for num, i, j in zip(range(len(rx.data)), rx.row, rx.col):
+        if i != j and validate_rxn_pair(i, j):
+            row.append(i)
+            col.append(j)
+            data.append(1)
+    return scipy.sparse.coo_matrix((data, (row, col)), shape=rx.shape)
 
 
 def rxn_matrix_to_list(RN, valid_concerted_matrix, rxn_dataframe):

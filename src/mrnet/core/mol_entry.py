@@ -12,6 +12,8 @@ from pymatgen.analysis.graphs import MoleculeGraph, MolGraphSplitError
 from pymatgen.analysis.local_env import OpenBabelNN, metal_edge_extender
 from pymatgen.core.structure import Molecule
 
+from mrnet.utils.constants import ROOM_TEMP
+
 __author__ = "Sam Blau, Mingjian Wen"
 __copyright__ = "Copyright 2019, The Materials Project"
 __version__ = "0.1"
@@ -253,7 +255,7 @@ class MoleculeEntry(MSONable):
     def coords(self) -> np.ndarray:
         return self.molecule.cart_coords
 
-    def get_free_energy(self, temperature: float = 298.15) -> Optional[float]:
+    def get_free_energy(self, temperature: float = ROOM_TEMP) -> Optional[float]:
         """
         Get the free energy at the give temperature.
         """
@@ -375,19 +377,31 @@ class MoleculeEntry(MSONable):
             return None
 
     def __repr__(self):
+
         output = [
-            "MoleculeEntry {} - {} - E{} - C{}".format(
-                self.entry_id, self.formula, self.num_bonds, self.charge
-            ),
-            "Energy = {:.4f} Hartree".format(self.uncorrected_energy),
-            "Correction = {:.4f} Hartree".format(self.correction),
-            "Enthalpy = {:.4f} kcal/mol".format(self.enthalpy),
-            "Entropy = {:.4f} cal/mol.K".format(self.entropy),
-            "Free Energy (298.15 K) = {:.4f} eV".format(self.get_free_energy()),
-            "Parameters:",
+            f"MoleculeEntry {self.entry_id} - {self.formula}",
+            f"Number of bonds = {self.num_bonds}",
+            f"Total charge = {self.charge}",
         ]
-        for k, v in self.parameters.items():
-            output.append("{} = {}".format(k, v))
+
+        energies = [
+            ("Energy", "Hartree", self.uncorrected_energy),
+            ("Correction", "Hartree", self.correction),
+            ("Enthalpy", "kcal/mol", self.enthalpy),
+            ("Entropy", "cal/mol.K", self.entropy),
+            ("Free Energy (298.15 K)", "eV", self.get_free_energy()),
+        ]
+        for name, unit, value in energies:
+            if value is None:
+                output.append(f"{name} = {value} {unit}")
+            else:
+                output.append(f"{name} = {value:.4f} {unit}")
+
+        if self.parameters:
+            output.append("Parameters:")
+            for k, v in self.parameters.items():
+                output.append("{} = {}".format(k, v))
+
         return "\n".join(output)
 
     def __str__(self):
