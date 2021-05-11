@@ -94,6 +94,9 @@ def construct_matrix(data, coords, size):
 
     scipy COO sparse matrix format
 
+    Note: scipy matrix can be converted to matrix market format by
+    scipy.io.mmwrite
+
     :param data: list of nonzero values
     :param coords: list of tuples that indicate row and col indices
     :param size: the number of rows/columns in the square matrix
