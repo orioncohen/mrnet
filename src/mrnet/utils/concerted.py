@@ -307,9 +307,11 @@ def validate_concerted_rxns(rxn_adjacency_matrix, rxn_dataframe):
 
 
     # TODO for Atsushi: accelerate this with Numba!
-    rxn_dim = len(rxn_dataframe)
     rx = rxn_adjacency_matrix  # this could be a copy but that would be slow?
+    rxn_dim = len(rxn_dataframe)
     rx.resize((rxn_dim, rxn_dim))
+    mat_dim = len(rx.data)
+
 
 
     # reshape data for cuda kernel
@@ -333,11 +335,20 @@ def validate_concerted_rxns(rxn_adjacency_matrix, rxn_dataframe):
 
     d_rxn_mat_row   = cuda.to_device(rx.row)
     d_rxn_mat_col   = cuda.to_device(rx.col)
-    d_rxn_mat_data  = cuda.device_array(rxn_dim)
+    d_rxn_mat_data  = cuda.device_array(mat_dim)
 
     # determine thread/block size
+    # TO DO: determine the optimal threadsperblock size
     threadsperblock = 128
-    blockspergrid   = int(math.ceil(rxn_dim / threadsperblock))
+    blockspergrid   = int(math.ceil(mat_dim / threadsperblock))
+
+    # print("rxn_dim= ", rxn_dim)
+    # print("mat_dim= ", mat_dim)
+    # print("threadsperblock= ", threadsperblock)
+    # print("blockspergrid= ", blockspergrid)
+    # print("data len = ", len(rx.data))
+    # print("row len  = ", len(rx.row))
+    # print("col len  = ", len(rx.col))
 
     #GPU kernel
     validate_rxn_pair[blockspergrid, threadsperblock] \
@@ -345,6 +356,10 @@ def validate_concerted_rxns(rxn_adjacency_matrix, rxn_dataframe):
 
     # send back data to host device
     data = d_rxn_mat_data.copy_to_host()
+
+    # print("data len = ", len(data))
+    # print("row len  = ", len(rx.row))
+    # print("col len  = ", len(rx.col))
 
     # create sparce matrix
     output = scipy.sparse.coo_matrix((data, (rx.row, rx.col)), shape=rx.shape)
